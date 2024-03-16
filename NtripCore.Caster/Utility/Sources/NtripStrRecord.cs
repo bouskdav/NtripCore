@@ -57,5 +57,7 @@ namespace NtripCore.Caster.Utility.Sources
         }
 
         public string Mountpoint => _mountpoint;
+
+        public string OriginalString => _record;
     }
 }

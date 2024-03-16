@@ -65,16 +65,26 @@ namespace NtripCore.Caster
 
             foreach (NtripSource source in preconfiguredSources)
             {
+                caster.AddNtripSource(source);
+
                 if (!String.IsNullOrEmpty(source.Host) && source.Port.HasValue)
                 {
-                    IPAddress[] ipAddressList = Dns.GetHostAddresses(source.Host);
+                    IPEndPoint serverEndPoint;
 
-                    // TODO: check if DNS resolved something
+                    try
+                    {
+                        IPAddress[] ipAddressList = Dns.GetHostAddresses(source.Host);
 
-                    IPEndPoint serverEndPoint = new IPEndPoint(ipAddressList[0], source.Port.Value);
+                        // TODO: check if DNS resolved something
 
-                    //// Create a new TCP chat client
-                    //
+                        serverEndPoint = new IPEndPoint(ipAddressList[0], source.Port.Value);
+                    }
+                    catch (Exception ex) 
+                    {
+                        _logger.LogWarning($"Cannot connect to {source.Host}:{source.Port} - {ex.Message}");
+
+                        continue;
+                    }
 
                     NtripGetSourceTableHttpRequestMessage getSourceTableHttpRequestMessage;
 
@@ -106,7 +116,6 @@ namespace NtripCore.Caster
                             caster.AddStreamClient(client);
                         }
                     }
-                    
 
                     //bool connected = client.Connect();
 

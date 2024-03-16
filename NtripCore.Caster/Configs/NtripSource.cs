@@ -6,7 +6,14 @@ namespace NtripCore.Caster.Configs
 {
     public class NtripSource
     {
+        private readonly string _id;
+
         private NtripSourceTable _ntripSourceTable;
+
+        public NtripSource() 
+        { 
+            _id = Guid.NewGuid().ToString();
+        }
 
         public string Host { get; set; }
         public int? Port { get; set; }
@@ -15,6 +22,8 @@ namespace NtripCore.Caster.Configs
         public bool AuthRequired { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
+
+        public string Id => _id;
 
         public Task InsertSourceTable(NtripSourceTable ntripSourceTable)
         {

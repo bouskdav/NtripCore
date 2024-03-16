@@ -1,5 +1,6 @@
 ﻿using NetCoreServer;
 using NtripCore.Caster.Connections.DataPullers;
+using NtripCore.Caster.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,9 +15,14 @@ namespace NtripCore.Caster.Connections
     /// </summary>
     public class NtripCasterServer : TcpServer
     {
+        private NtripCaster _ntripCaster;
+
         public NtripCasterServer(IPAddress address, int port) : base(address, port) { }
 
-        protected override TcpSession CreateSession() { return new NtripCasterSubscriberSession(this); }
+        protected override TcpSession CreateSession() 
+        {
+            return new NtripCasterSubscriberSession(this, _ntripCaster); 
+        }
 
         protected override void OnError(System.Net.Sockets.SocketError error)
         {
@@ -26,6 +32,11 @@ namespace NtripCore.Caster.Connections
         protected override void OnConnected(TcpSession session)
         {
             base.OnConnected(session);
+        }
+
+        internal void RegisterCaster(NtripCaster ntripCaster)
+        {
+            _ntripCaster = ntripCaster;
         }
     }
 }

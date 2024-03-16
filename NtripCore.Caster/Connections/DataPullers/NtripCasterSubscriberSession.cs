@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using NetCoreServer;
 using NtripCore.Caster.Configs;
+using NtripCore.Caster.Core;
+using NtripCore.Caster.Core.NtripHttp.Request;
 using NtripCore.Caster.Utility;
 using System;
 using System.Collections.Generic;
@@ -15,7 +17,15 @@ namespace NtripCore.Caster.Connections.DataPullers
     /// </summary>
     public class NtripCasterSubscriberSession : TcpSession
     {
-        public NtripCasterSubscriberSession(TcpServer server) : base(server) { }
+        private readonly NtripCasterServer _server;
+        private readonly NtripCaster _ntripCaster;
+
+        public NtripCasterSubscriberSession(NtripCasterServer server, NtripCaster ntripCaster) 
+            : base(server)
+        {
+            _server = server;
+            _ntripCaster = ntripCaster;
+        }
 
         protected override void OnConnected()
         {
@@ -31,6 +41,8 @@ namespace NtripCore.Caster.Connections.DataPullers
             Console.WriteLine($"Chat TCP session with Id {Id} disconnected!");
         }
 
+        // BEWARE of differences between ntrip rev 1 and rev2
+        // https://www.use-snip.com/kb/knowledge-base/ntrip-rev1-versus-rev2-formats/ -> especially in responses ICY vs HTTP
         protected override void OnReceived(byte[] buffer, long offset, long size)
         {
             string message = Encoding.UTF8.GetString(buffer, (int)offset, (int)size);
@@ -41,39 +53,70 @@ namespace NtripCore.Caster.Connections.DataPullers
                 // proccess http requests
                 if (message.Contains("HTTP"))
                 {
-                    var parsedHeaders = ParsedHttpHeaders.Parse(message);
+                    IncomingNtripHttpRequestMessage incomingMessage = new IncomingNtripHttpRequestMessage(message);
 
-                    if (!parsedHeaders.IsNTRIP)
-                    {
-                        var response = "HTTP/1.0 200 OK\r\n" +
-                                       "Server: NTRIPCaster\r\n" +
-                                       "Content-Type: text/plain" +
-                                       "\r\n" +
-                                       "\r\n" +
-                                       "This is a NTRIP Caster";
+                    // TODO: check authorization
 
-                        SendAsync(response);
-                        Disconnect();
-                    }
-                    else if (parsedHeaders.Mountpoint == "")
-                    {
-                        //// Send Sourcetable
-                        //SendSourcetable(socket);
-                        //socket.Close();
+                    //var parsedHeaders = ParsedHttpHeaders.Parse(message);
 
-                        string sourceTableResponse = GetSourcetable(parsedHeaders);
+                    // if request comes from NTRIP client
+                    if (incomingMessage.IsNtripClient)
+                    {
+                        // if source table is requested
+                        if (incomingMessage.IsSourceTableRequested)
+                        {
+                            string sourceTableResponse = GetSourcetable(incomingMessage).GetAwaiter().GetResult();
 
-                        SendAsync(sourceTableResponse);
-                        Disconnect();
+                            SendAsync(sourceTableResponse);
+                            Disconnect();
+                        }
+                        // else its a stream subscription
+                        else
+                        {
+                            string okReponse = "HTTP/1.1 200 OK\r\n";
+
+                            SendAsync(okReponse);
+
+                            _ntripCaster.SubscribeClientToMountpoint(this, incomingMessage.RequestedMountpointName);
+                        }
                     }
-                    else if (parsedHeaders.IsSource)
-                    {
-                        //ProcessSource(socket, parsedHeaders);
-                    }
-                    else
-                    {
-                        ProcessClient(parsedHeaders);
-                    }
+
+                    //if (incomingMessage.IsSourceTableRequested && incomingMessage.IsNtripClient)
+                    //{
+                    //    var response = "HTTP/1.0 200 OK\r\n" +
+                    //                   "Server: NTRIPCaster\r\n" +
+                    //                   "Content-Type: text/plain" +
+                    //                   "\r\n" +
+                    //                   "\r\n" +
+                    //                   "This is a NTRIP Caster";
+
+                    //    SendAsync(response);
+                    //    Disconnect();
+                    //}
+                    //// if requested source table from web browser (non-ntrip client), return source table as standard HTML document
+                    //else if ()
+                    //{
+
+                    //}
+                    //else if (parsedHeaders.Mountpoint == "")
+                    //{
+                    //    //// Send Sourcetable
+                    //    //SendSourcetable(socket);
+                    //    //socket.Close();
+
+                    //    string sourceTableResponse = GetSourcetable(parsedHeaders);
+
+                    //    SendAsync(sourceTableResponse);
+                    //    Disconnect();
+                    //}
+                    //else if (parsedHeaders.IsSource)
+                    //{
+                    //    //ProcessSource(socket, parsedHeaders);
+                    //}
+                    //else
+                    //{
+                    //    ProcessClient(parsedHeaders);
+                    //}
                 }
                 // if message starts with $, dont parse headers
                 else if (message.StartsWith("$"))
@@ -174,38 +217,89 @@ namespace NtripCore.Caster.Connections.DataPullers
             //}
         }
 
-        private string GetSourcetable(ParsedHttpHeaders headers)
+        //private string GetSourcetable(ParsedHttpHeaders headers)
+        //{
+        //    var table = new StringBuilder();
+
+        //    //foreach (var source in _configuration.GetSection("Sources").Get<List<Source>>())
+        //    //{
+        //    //    table.Append("STR;");
+        //    //    table.Append(source.Mountpoint); table.Append(";"); // Mountpoint
+        //    //    table.Append(source.Identifier); table.Append(";"); // Identifier
+        //    //    table.Append(source.Format); table.Append(";;");  // Format (No details)
+        //    //    table.Append((int)source.Carrier); table.Append(";"); // Carrier
+        //    //    table.Append(source.NavSystem); table.Append(";"); // NavSystem
+        //    //    table.Append(source.Network); table.Append(";"); // Ref-Network
+        //    //    table.Append(source.Country); table.Append(";"); // Country
+        //    //    table.Append(source.Latitude.ToString("0.00")); table.Append(";"); // Latitude
+        //    //    table.Append(source.Longitude.ToString("0.00")); table.Append(";"); // Longitude
+        //    //    table.Append("0;"); // Client doesn't have to send NMEA
+        //    //    table.Append("0;"); // Single Base Solution
+        //    //    table.Append("Unknown;"); // Generator
+        //    //    table.Append("none;");  // Compression/Encryption
+        //    //    table.Append(source.AuthRequired ? "B" : "N"); table.Append(";"); // Basic Authentication
+        //    //    table.Append("N;"); // No fee
+        //    //    table.Append("9600;"); // Bitrate
+        //    //    table.Append("\r\n");
+        //    //}
+
+        //    var builder = new StringBuilder();
+
+        //    builder.Append("SOURCETABLE 200 OK\r\n");
+        //    builder.Append("Server: NTRIP Caster/1.0\r\n");
+        //    builder.Append("Conent-Type: text/plain\r\n");
+        //    builder.Append($"Conent-Length: #{table.Length}\r\n");
+        //    builder.Append("\r\n");
+        //    builder.Append(table.ToString());
+        //    builder.Append("ENDSOURCETABLE\r\n");
+
+        //    return builder.ToString();
+        //}
+
+        private async Task<string> GetSourcetable(IncomingNtripHttpRequestMessage requestMessage)
         {
             var table = new StringBuilder();
 
-            //foreach (var source in _configuration.GetSection("Sources").Get<List<Source>>())
-            //{
-            //    table.Append("STR;");
-            //    table.Append(source.Mountpoint); table.Append(";"); // Mountpoint
-            //    table.Append(source.Identifier); table.Append(";"); // Identifier
-            //    table.Append(source.Format); table.Append(";;");  // Format (No details)
-            //    table.Append((int)source.Carrier); table.Append(";"); // Carrier
-            //    table.Append(source.NavSystem); table.Append(";"); // NavSystem
-            //    table.Append(source.Network); table.Append(";"); // Ref-Network
-            //    table.Append(source.Country); table.Append(";"); // Country
-            //    table.Append(source.Latitude.ToString("0.00")); table.Append(";"); // Latitude
-            //    table.Append(source.Longitude.ToString("0.00")); table.Append(";"); // Longitude
-            //    table.Append("0;"); // Client doesn't have to send NMEA
-            //    table.Append("0;"); // Single Base Solution
-            //    table.Append("Unknown;"); // Generator
-            //    table.Append("none;");  // Compression/Encryption
-            //    table.Append(source.AuthRequired ? "B" : "N"); table.Append(";"); // Basic Authentication
-            //    table.Append("N;"); // No fee
-            //    table.Append("9600;"); // Bitrate
-            //    table.Append("\r\n");
-            //}
+            foreach (var source in _ntripCaster.SourceList)
+            {
+                var sourceTable = await source.GetSourceTable();
+
+                foreach (var stream in sourceTable.Streams)
+                {
+                    // TODO: change from original string
+                    table.Append(stream.Value.OriginalString + "\r\n");
+                }
+                //table.Append("STR;");
+                //table.Append(source.Mountpoint); table.Append(";"); // Mountpoint
+                //table.Append(source.Identifier); table.Append(";"); // Identifier
+                //table.Append(source.Format); table.Append(";;");  // Format (No details)
+                //table.Append((int)source.Carrier); table.Append(";"); // Carrier
+                //table.Append(source.NavSystem); table.Append(";"); // NavSystem
+                //table.Append(source.Network); table.Append(";"); // Ref-Network
+                //table.Append(source.Country); table.Append(";"); // Country
+                //table.Append(source.Latitude.ToString("0.00")); table.Append(";"); // Latitude
+                //table.Append(source.Longitude.ToString("0.00")); table.Append(";"); // Longitude
+                //table.Append("0;"); // Client doesn't have to send NMEA
+                //table.Append("0;"); // Single Base Solution
+                //table.Append("Unknown;"); // Generator
+                //table.Append("none;");  // Compression/Encryption
+                //table.Append(source.AuthRequired ? "B" : "N"); table.Append(";"); // Basic Authentication
+                //table.Append("N;"); // No fee
+                //table.Append("9600;"); // Bitrate
+                //table.Append("\r\n");
+            }
 
             var builder = new StringBuilder();
 
-            builder.Append("SOURCETABLE 200 OK\r\n");
-            builder.Append("Server: NTRIP Caster/1.0\r\n");
-            builder.Append("Conent-Type: text/plain\r\n");
-            builder.Append($"Conent-Length: #{table.Length}\r\n");
+            //builder.Append("SOURCETABLE 200 OK\r\n");
+            builder.Append("HTTP/1.1 200 OK\r\n");
+            builder.Append("Ntrip-Version: Ntrip/2.0\r\n");
+            builder.Append("Ntrip-Flags:\r\n");
+            builder.Append("Server: NtripCore\r\n");
+            builder.Append($"Date: {String.Format("{0:ddd,' 'dd' 'MMM' 'yyyy' 'HH':'mm':'ss' 'K}", DateTime.Now)}\r\n");
+            builder.Append("Connection: close\r\n");
+            builder.Append("Content-Type: gnss/sourcetable\r\n");
+            builder.Append($"Content-Length: {table.Length + 15}\r\n");
             builder.Append("\r\n");
             builder.Append(table.ToString());
             builder.Append("ENDSOURCETABLE\r\n");
