@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NtripCore.Caster.Utility;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -47,19 +48,19 @@ namespace NtripCore.Caster.Core.NMEA
                     longitude *= -1;
 
                 // Parse fix quality
-                int fixQuality = int.Parse(parts[6], CultureInfo.InvariantCulture);
+                int fixQuality = int.Parse(parts[6].SetDefaultValueIfNullOrEmpty("0"), CultureInfo.InvariantCulture);
 
                 // Parse number of satellites tracked
-                int satellitesTracked = int.Parse(parts[7], CultureInfo.InvariantCulture);
+                int satellitesTracked = int.Parse(parts[7].SetDefaultValueIfNullOrEmpty("0"), CultureInfo.InvariantCulture);
 
                 // Parse HDOP
-                double hdop = double.Parse(parts[8], CultureInfo.InvariantCulture);
+                double hdop = double.Parse(parts[8].SetDefaultValueIfNullOrEmpty("0"), CultureInfo.InvariantCulture);
 
                 // Parse altitude
-                double altitude = double.Parse(parts[9], CultureInfo.InvariantCulture);
+                double altitude = double.Parse(parts[9].SetDefaultValueIfNullOrEmpty("0"), CultureInfo.InvariantCulture);
 
                 // Parse height of geoid
-                double heightOfGeoid = double.Parse(parts[11], CultureInfo.InvariantCulture);
+                double heightOfGeoid = double.Parse(parts[11].SetDefaultValueIfNullOrEmpty("0"), CultureInfo.InvariantCulture);
 
                 return new GPGGAMessage
                 {

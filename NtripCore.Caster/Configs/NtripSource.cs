@@ -34,7 +34,7 @@ namespace NtripCore.Caster.Configs
 
         public Task<NtripSourceTable> GetSourceTableAsync()
         {
-            if (AllowedMountpoints?.Count > 0)
+            if (AllowedMountpoints?.Count > 0 && _ntripSourceTable?.Streams != null)
             {
                 // select only allowed streams
                 NtripSourceTable ntripSourceTable = new NtripSourceTable(

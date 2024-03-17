@@ -14,6 +14,8 @@ using NtripCore.Caster.Core.NtripHttp;
 using NtripCore.Caster.Core.NtripHttp.Request;
 using System.Runtime.CompilerServices;
 using NtripCore.Caster.Connections.DataPushers;
+using System.Globalization;
+using NtripCore.Caster.Core.NMEA;
 
 namespace NtripCore.Caster
 {
@@ -52,12 +54,6 @@ namespace NtripCore.Caster
 
             var caster = host.Services.GetRequiredService<NtripCaster>();
 
-            //// Create a new TCP chat server
-            //var server = new NtripCasterServer(IPAddress.Any, port);
-
-            // Start the server
-            await caster.StartServer();
-
             // add clients from config
             NtripHttpClient ntripHttpClient = new NtripHttpClient();
 
@@ -93,7 +89,12 @@ namespace NtripCore.Caster
                     else
                         getSourceTableHttpRequestMessage = new NtripGetSourceTableHttpRequestMessage(source.Host, source.Port.Value);
 
+                    // get source table
+                    _logger.LogInformation($"Downloading source table from {source.Host}:{source.Port}");
+
                     var sourceTableResponse = await ntripHttpClient.GetSourceTableAsync(getSourceTableHttpRequestMessage);
+
+                    _logger.LogInformation($"Successfully fetched {sourceTableResponse.AsNtripSourceTable()?.Streams?.Count ?? 0} sources.");
 
                     await source.InsertSourceTable(sourceTableResponse.AsNtripSourceTable());
 
@@ -136,6 +137,9 @@ namespace NtripCore.Caster
                     
                 }
             }
+
+            // Start the server
+            await caster.StartServer();
 
             // client
 

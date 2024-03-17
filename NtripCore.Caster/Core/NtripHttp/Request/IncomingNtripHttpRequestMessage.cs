@@ -25,6 +25,8 @@ namespace NtripCore.Caster.Core.NtripHttp.Request
         private readonly string _username;
         private readonly string _password;
 
+        private int _version;
+
         public IncomingNtripHttpRequestMessage(string content) 
         {
             _content = content;
@@ -128,6 +130,15 @@ namespace NtripCore.Caster.Core.NtripHttp.Request
                     _password = usernamePassword[1];
                 }
             }
+
+            // check ntrip version
+            _version = 1;
+            if (_headers.ContainsKey("Ntrip-Version"))
+            {
+                var versionHeader = _headers["Ntrip-Version"];
+                if (versionHeader == "Ntrip/2.0")
+                    _version = 2;
+            }
         }
 
         public bool IsNtripClient => _headers["User-Agent"]?.Contains("NTRIP", StringComparison.InvariantCultureIgnoreCase) ?? false;
@@ -141,5 +152,7 @@ namespace NtripCore.Caster.Core.NtripHttp.Request
         public string Username => _username;
 
         public string Password => _password;
+
+        public bool IsVersion2 => _version == 2;
     }
 }

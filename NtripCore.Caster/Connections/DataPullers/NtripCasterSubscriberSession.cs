@@ -8,6 +8,7 @@ using NtripCore.Caster.Utility;
 using NtripCore.Caster.Utility.Sources;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -66,8 +67,6 @@ namespace NtripCore.Caster.Connections.DataPullers
 
                     // TODO: check authorization
 
-                    //var parsedHeaders = ParsedHttpHeaders.Parse(message);
-
                     // if request comes from NTRIP client
                     if (incomingMessage.IsNtripClient)
                     {
@@ -82,9 +81,9 @@ namespace NtripCore.Caster.Connections.DataPullers
                         // else its a stream subscription
                         else
                         {
-                            string okReponse = "HTTP/1.1 200 OK\r\n";
+                            var okResponse = GetOkResponse(incomingMessage).GetAwaiter().GetResult();
 
-                            SendAsync(okReponse);
+                            SendAsync(okResponse);
 
                             _ntripCaster.SubscribeClientToMountpoint(this, incomingMessage.RequestedMountpointName);
                         }
@@ -111,6 +110,7 @@ namespace NtripCore.Caster.Connections.DataPullers
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error: " + ex.ToString());
                 Disconnect();
             }
         }
@@ -273,40 +273,57 @@ namespace NtripCore.Caster.Connections.DataPullers
                     // TODO: change from original string
                     table.Append(stream.Value.OriginalString + "\r\n");
                 }
-                //table.Append("STR;");
-                //table.Append(source.Mountpoint); table.Append(";"); // Mountpoint
-                //table.Append(source.Identifier); table.Append(";"); // Identifier
-                //table.Append(source.Format); table.Append(";;");  // Format (No details)
-                //table.Append((int)source.Carrier); table.Append(";"); // Carrier
-                //table.Append(source.NavSystem); table.Append(";"); // NavSystem
-                //table.Append(source.Network); table.Append(";"); // Ref-Network
-                //table.Append(source.Country); table.Append(";"); // Country
-                //table.Append(source.Latitude.ToString("0.00")); table.Append(";"); // Latitude
-                //table.Append(source.Longitude.ToString("0.00")); table.Append(";"); // Longitude
-                //table.Append("0;"); // Client doesn't have to send NMEA
-                //table.Append("0;"); // Single Base Solution
-                //table.Append("Unknown;"); // Generator
-                //table.Append("none;");  // Compression/Encryption
-                //table.Append(source.AuthRequired ? "B" : "N"); table.Append(";"); // Basic Authentication
-                //table.Append("N;"); // No fee
-                //table.Append("9600;"); // Bitrate
-                //table.Append("\r\n");
             }
 
             var builder = new StringBuilder();
 
-            //builder.Append("SOURCETABLE 200 OK\r\n");
-            builder.Append("HTTP/1.1 200 OK\r\n");
-            builder.Append("Ntrip-Version: Ntrip/2.0\r\n");
-            builder.Append("Ntrip-Flags:\r\n");
+            if (requestMessage.IsVersion2)
+            {
+                builder.Append("HTTP/1.1 200 OK\r\n");
+                builder.Append("Ntrip-Version: Ntrip/2.0\r\n");
+                builder.Append("Ntrip-Flags:\r\n");
+            }
+            else
+            {
+                builder.Append("SOURCETABLE 200 OK\r\n");
+            }
+            
             builder.Append("Server: NtripCore\r\n");
-            builder.Append($"Date: {String.Format("{0:ddd,' 'dd' 'MMM' 'yyyy' 'HH':'mm':'ss' 'K}", DateTime.Now)}\r\n");
-            builder.Append("Connection: close\r\n");
-            builder.Append("Content-Type: gnss/sourcetable\r\n");
+            builder.Append($"Date: {DateTime.UtcNow.ToString("ddd,' 'dd' 'MMMM' 'yyyy' 'HH':'mm':'ss' UTC'", CultureInfo.InvariantCulture)}\r\n");
+            
+            if (requestMessage.IsVersion2)
+            {
+                builder.Append("Connection: close\r\n");
+                builder.Append("Content-Type: gnss/sourcetable\r\n");
+            }
+
             builder.Append($"Content-Length: {table.Length + 15}\r\n");
             builder.Append("\r\n");
             builder.Append(table.ToString());
             builder.Append("ENDSOURCETABLE\r\n");
+
+            return builder.ToString();
+        }
+
+        private async Task<string> GetOkResponse(IncomingNtripHttpRequestMessage requestMessage)
+        {
+            var builder = new StringBuilder();
+
+            if (requestMessage.IsVersion2)
+            {
+                builder.Append("HTTP/1.1 200 OK\r\n");
+                builder.Append($"Date: {DateTime.UtcNow.ToString("ddd,' 'dd' 'MMMM' 'yyyy' 'HH':'mm':'ss' UTC'", CultureInfo.InvariantCulture)}\r\n");
+                builder.Append("Server: NtripCore\r\n");
+                builder.Append("Ntrip-Version: Ntrip/2.0\r\n");
+                builder.Append("Cache-Control: no-store, no-cache, max-age=0\r\n");
+                builder.Append("Pragma: no-cache\r\n");
+                builder.Append("Connection: close\r\n");
+                builder.Append("Content-Type: gnss/data\r\n");
+            }
+            else
+            {
+                builder.Append("ICY 200 OK\r\n");
+            }
 
             return builder.ToString();
         }
