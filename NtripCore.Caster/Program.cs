@@ -19,7 +19,7 @@ namespace NtripCore.Caster
 {
     internal class Program
     {
-        static IConfiguration _configuration;
+        public static IConfiguration _configuration;
         static IHostEnvironment _hostingEnvironment;
         static ILogger<Program> _logger;
 
@@ -106,7 +106,7 @@ namespace NtripCore.Caster
                             _logger.LogInformation($"Connecting to preconfigured source: {serverEndPoint.Address}:{serverEndPoint.Port}/{item}");
 
                             var client = new NtripStreamClientSession(serverEndPoint.Address.ToString(), serverEndPoint.Port, source, item);
-                            var connectionResult = await client.SendConnectionRequest();
+                            var connectionResult = await client.SendConnectionRequest(true);
 
                             if (connectionResult)
                             {

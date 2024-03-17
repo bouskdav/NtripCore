@@ -19,6 +19,7 @@ namespace NtripCore.Caster.Connections.DataPushers
         private readonly NtripSource _ntripSource;
         private readonly string _mountpointName;
         private bool _stop = false;
+        private bool _persistConnection = false;
 
         public string MountpointName => _mountpointName;
 
@@ -86,7 +87,7 @@ namespace NtripCore.Caster.Connections.DataPushers
             Console.WriteLine($"An error occured with session {Id}: {error}");
         }
 
-        public Task<bool> SendConnectionRequest()
+        public Task<bool> SendConnectionRequest(bool persistConnection = false)
         {
             bool connected = IsConnected;
 
@@ -114,6 +115,8 @@ namespace NtripCore.Caster.Connections.DataPushers
             var requestSent = SendAsync(Encoding.ASCII.GetBytes(ntripRequest));
 
             ReceiveAsync();
+
+            _persistConnection = persistConnection;
 
             return Task.FromResult(IsConnected && requestSent);
         }

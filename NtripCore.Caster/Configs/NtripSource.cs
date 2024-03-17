@@ -32,7 +32,7 @@ namespace NtripCore.Caster.Configs
             return Task.CompletedTask;
         }
 
-        public Task<NtripSourceTable> GetSourceTable()
+        public Task<NtripSourceTable> GetSourceTableAsync()
         {
             if (AllowedMountpoints?.Count > 0)
             {

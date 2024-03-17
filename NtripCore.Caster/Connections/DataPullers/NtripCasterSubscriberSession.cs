@@ -2,8 +2,10 @@
 using NetCoreServer;
 using NtripCore.Caster.Configs;
 using NtripCore.Caster.Core;
+using NtripCore.Caster.Core.NMEA;
 using NtripCore.Caster.Core.NtripHttp.Request;
 using NtripCore.Caster.Utility;
+using NtripCore.Caster.Utility.Sources;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +21,13 @@ namespace NtripCore.Caster.Connections.DataPullers
     {
         private readonly NtripCasterServer _server;
         private readonly NtripCaster _ntripCaster;
+
+        private bool _nearestMode = false;
+        private double? _latitude;
+        private double? _longitude;
+
+        public double? Latitude { get => _latitude; set => _latitude = value; }
+        public double? Longitude { get => _longitude; set => _longitude = value; }
 
         public NtripCasterSubscriberSession(NtripCasterServer server, NtripCaster ntripCaster) 
             : base(server)
@@ -80,61 +89,30 @@ namespace NtripCore.Caster.Connections.DataPullers
                             _ntripCaster.SubscribeClientToMountpoint(this, incomingMessage.RequestedMountpointName);
                         }
                     }
-
-                    //if (incomingMessage.IsSourceTableRequested && incomingMessage.IsNtripClient)
-                    //{
-                    //    var response = "HTTP/1.0 200 OK\r\n" +
-                    //                   "Server: NTRIPCaster\r\n" +
-                    //                   "Content-Type: text/plain" +
-                    //                   "\r\n" +
-                    //                   "\r\n" +
-                    //                   "This is a NTRIP Caster";
-
-                    //    SendAsync(response);
-                    //    Disconnect();
-                    //}
-                    //// if requested source table from web browser (non-ntrip client), return source table as standard HTML document
-                    //else if ()
-                    //{
-
-                    //}
-                    //else if (parsedHeaders.Mountpoint == "")
-                    //{
-                    //    //// Send Sourcetable
-                    //    //SendSourcetable(socket);
-                    //    //socket.Close();
-
-                    //    string sourceTableResponse = GetSourcetable(parsedHeaders);
-
-                    //    SendAsync(sourceTableResponse);
-                    //    Disconnect();
-                    //}
-                    //else if (parsedHeaders.IsSource)
-                    //{
-                    //    //ProcessSource(socket, parsedHeaders);
-                    //}
-                    //else
-                    //{
-                    //    ProcessClient(parsedHeaders);
-                    //}
                 }
                 // if message starts with $, dont parse headers
                 else if (message.StartsWith("$"))
                 {
+                    // TODO: NMEA strings go here
+                    if (message.StartsWith("$GPGGA"))
+                    {
+                        var gpggaMessage = GPGGAMessage.Parse(message);
 
+                        _latitude = gpggaMessage.Latitude;
+                        _longitude = gpggaMessage.Longitude;
+
+                        // TODO: update position an resubscribe to nearest
+                        if (_nearestMode)
+                        {
+                            _ntripCaster.ResubscribeClientToNearestMountpoint(this).GetAwaiter().GetResult();
+                        }
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Disconnect();
             }
-
-            //// Multicast message to all connected sessions
-            //Server.Multicast(message);
-
-            //// If the buffer starts with '!' the disconnect the current session
-            //if (message == "!")
-            //    Disconnect();
         }
 
         protected override void OnError(System.Net.Sockets.SocketError error)
@@ -260,9 +238,35 @@ namespace NtripCore.Caster.Connections.DataPullers
         {
             var table = new StringBuilder();
 
+            // if nearest source enabled, put the source on top
+            if (Program._configuration.GetValue<bool>("NearestMountpoint:Enabled"))
+            {
+                NtripStrRecord nearestStream = new NtripStrRecord(
+                    Program._configuration.GetValue<string>("NearestMountpoint:MountpointName"),
+                    "NtripCore nearest mountpoint function",
+                    "RTCM 3",
+                    "",
+                    "2",
+                    "GPS+GLO+GAL+BDS+QZS",
+                    "NtripCore network",
+                    "XXX",
+                    "0",
+                    "0",
+                    "1",
+                    "1",
+                    "NtripCore",
+                    "none",
+                    "B",
+                    "N",
+                    "",
+                    "");
+
+                table.Append(nearestStream.GenerateSourceTableString() + "\r\n");
+            }
+
             foreach (var source in _ntripCaster.SourceList)
             {
-                var sourceTable = await source.GetSourceTable();
+                var sourceTable = await source.GetSourceTableAsync();
 
                 foreach (var stream in sourceTable.Streams)
                 {
@@ -306,5 +310,7 @@ namespace NtripCore.Caster.Connections.DataPullers
 
             return builder.ToString();
         }
+
+        public void SetNearestMode() => _nearestMode = true;
     }
 }
