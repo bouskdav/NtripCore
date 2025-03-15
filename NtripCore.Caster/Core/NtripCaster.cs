@@ -4,6 +4,7 @@ using NtripCore.Caster.Configs;
 using NtripCore.Caster.Connections;
 using NtripCore.Caster.Connections.DataPullers;
 using NtripCore.Caster.Connections.DataPushers;
+using NtripCore.Caster.Connections.DataPushers.Abstraction;
 using NtripCore.Caster.Utility;
 using NtripCore.Caster.Utility.Sources;
 using System;
@@ -36,7 +37,8 @@ namespace NtripCore.Caster.Core
 
         // caster server (pusher) sessions
         // - when received data for any stream, forward it to all subscribed clients
-        private Dictionary<string, NtripStreamClientSession> _streams = new();
+        //private Dictionary<string, NtripStreamClientSession> _streams = new();
+        private Dictionary<string, INtripCorrectionSource> _streams = new();
 
         public string Id => _id;
 
@@ -143,37 +145,56 @@ namespace NtripCore.Caster.Core
                 // search sources
                 foreach (NtripSource source in SourceList)
                 {
-                    var sourceTable = source.GetSourceTableAsync().GetAwaiter().GetResult();
-                    if (sourceTable?.Streams?.ContainsKey(mountpoint) ?? false)
+                    // for local sources
+                    if (source.SourceType == SourceType.Local)
                     {
-                        IPEndPoint serverEndPoint;
-
-                        try
-                        {
-                            IPAddress[] ipAddressList = Dns.GetHostAddresses(source.Host);
-
-                            // TODO: check if DNS resolved something
-
-                            serverEndPoint = new IPEndPoint(ipAddressList[0], source.Port.Value);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning($"Cannot connect to {source.Host}:{source.Port} - {ex.Message}");
-
-                            break;
-                        }
-
-                        var client = new NtripStreamClientSession(serverEndPoint.Address.ToString(), serverEndPoint.Port, source, mountpoint);
+                        var client = new LocalBaseClientSession(source.Mountpoint, source.Connection);
                         var connectionResult = await client.SendConnectionRequest(true);
 
                         if (connectionResult)
                         {
-                            _logger.LogInformation($"Successfully connected to {serverEndPoint.Address}:{serverEndPoint.Port}/{mountpoint}");
+                            _logger.LogInformation($"Successfully connected to {source.Connection}/{mountpoint}");
                         }
 
                         AddStreamClient(client);
 
                         break;
+                    }
+                    // for default sources
+                    else
+                    {
+                        var sourceTable = source.GetSourceTableAsync().GetAwaiter().GetResult();
+                        if (sourceTable?.Streams?.ContainsKey(mountpoint) ?? false)
+                        {
+                            IPEndPoint serverEndPoint;
+
+                            try
+                            {
+                                IPAddress[] ipAddressList = Dns.GetHostAddresses(source.Host);
+
+                                // TODO: check if DNS resolved something
+
+                                serverEndPoint = new IPEndPoint(ipAddressList[0], source.Port.Value);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning($"Cannot connect to {source.Host}:{source.Port} - {ex.Message}");
+
+                                break;
+                            }
+
+                            var client = new NtripStreamClientSession(serverEndPoint.Address.ToString(), serverEndPoint.Port, source, mountpoint);
+                            var connectionResult = await client.SendConnectionRequest(true);
+
+                            if (connectionResult)
+                            {
+                                _logger.LogInformation($"Successfully connected to {serverEndPoint.Address}:{serverEndPoint.Port}/{mountpoint}");
+                            }
+
+                            AddStreamClient(client);
+
+                            break;
+                        }
                     }
                 }
             }
@@ -184,7 +205,8 @@ namespace NtripCore.Caster.Core
             _sources.Add(source.Id, source);
         }
 
-        public void AddStreamClient(NtripStreamClientSession client)
+        //public void AddStreamClient(NtripStreamClientSession client)
+        public void AddStreamClient(INtripCorrectionSource client)
         {
             _streams.Add(client.MountpointName, client);
 

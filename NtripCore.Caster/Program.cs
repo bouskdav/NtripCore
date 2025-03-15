@@ -16,6 +16,9 @@ using System.Runtime.CompilerServices;
 using NtripCore.Caster.Connections.DataPushers;
 using System.Globalization;
 using NtripCore.Caster.Core.NMEA;
+using NtripCore.Caster.Utility.Sources;
+using System.Collections.ObjectModel;
+using System.IO;
 
 namespace NtripCore.Caster
 {
@@ -63,7 +66,18 @@ namespace NtripCore.Caster
             {
                 caster.AddNtripSource(source);
 
-                if (!String.IsNullOrEmpty(source.Host) && source.Port.HasValue)
+                if (source.SourceType == SourceType.Local)
+                {
+                    _logger.LogInformation($"Creating local source: {source.Mountpoint}");
+
+                    NtripSourceTable table = new(new ReadOnlyDictionary<string, NtripStrRecord>(new Dictionary<string, NtripStrRecord>()
+                    {
+                        { source.Mountpoint, new NtripStrRecord($"STR;{source.Mountpoint};Dronoskola;RTCM 3.2;1005(30),1074(1),1084(1),1094(1);2;GPS+GLO+GAL;SNIP;CZE;49.93;14.28;1;0;sNTRIP;none;B;N;3100;") }
+                    }));
+
+                    await source.InsertSourceTable(table);
+                }
+                else if (!String.IsNullOrEmpty(source.Host) && source.Port.HasValue)
                 {
                     IPEndPoint serverEndPoint;
 

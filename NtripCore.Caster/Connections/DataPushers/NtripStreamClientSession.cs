@@ -1,5 +1,6 @@
 ﻿using NetCoreServer;
 using NtripCore.Caster.Configs;
+using NtripCore.Caster.Connections.DataPushers.Abstraction;
 using NtripCore.Caster.Connections.DataPushers.Events;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,7 @@ namespace NtripCore.Caster.Connections.DataPushers
     /// <summary>
     /// NtripStreamClient means subscription to an existing ntrip data stream (STR from source table)
     /// </summary>
-    public class NtripStreamClientSession : TcpClient
+    public class NtripStreamClientSession : TcpClient, INtripCorrectionSource
     {
         private readonly string _address;
         private readonly int _port;

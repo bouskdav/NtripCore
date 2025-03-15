@@ -16,6 +16,9 @@ namespace NtripCore.Caster.Configs
         }
 
         public SourceType SourceType { get; set; } = SourceType.Default;
+        public string Connection { get; set; }
+        public string Mountpoint { get; set; }
+
         public string Host { get; set; }
         public int? Port { get; set; }
         public List<string> AllowedMountpoints { get; set; }
