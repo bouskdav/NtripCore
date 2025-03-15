@@ -228,6 +228,9 @@ namespace NtripCore.Caster.Core
 
         internal void NotifyClientUnsubscribed(Guid id)
         {
+            if (!_clientSessions.ContainsKey(id))
+                return;
+
             // get previously subscribed mountpoint
             string subscribedMountPoint = _clientSessions[id];
 
