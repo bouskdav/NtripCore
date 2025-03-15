@@ -59,7 +59,9 @@ namespace NtripCore.Caster.Connections.DataPushers
                 //await device.SetMessageRate<RtcmV3Message1004>(1);
                 //await device.SetMessageRate<RtcmV3Message1004>(1);
                 
-                await device.SetSurveyInMode(minDuration: 60, positionAccuracyLimit: 5);
+                //await device.SetSurveyInMode(minDuration: 60, positionAccuracyLimit: 5);
+                await device.SetFixedBaseMode(new Asv.Common.GeoPoint(49.9352235, 14.2797668, 251.701));
+                //await device.SetFixedBaseMode(new );
                 //device.Connection.Filter<RtcmV3Msm4>().Subscribe(_ => { /* do something with RTCM */ });
                 //device.Connection.Filter<RtcmV3Msm4>().Subscribe(i =>
                 //{
