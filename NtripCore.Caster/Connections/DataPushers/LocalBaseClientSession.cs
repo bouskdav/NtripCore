@@ -55,8 +55,11 @@ namespace NtripCore.Caster.Connections.DataPushers
                 device = new UbxDevice(Connection);
 
                 await device.SetupByDefault();
-                //await device.SetMessageRate<RtcmV3Message1004>();
-                await device.SetSurveyInMode(minDuration: 60, positionAccuracyLimit: 2);
+                
+                //await device.SetMessageRate<RtcmV3Message1004>(1);
+                //await device.SetMessageRate<RtcmV3Message1004>(1);
+                
+                await device.SetSurveyInMode(minDuration: 60, positionAccuracyLimit: 5);
                 //device.Connection.Filter<RtcmV3Msm4>().Subscribe(_ => { /* do something with RTCM */ });
                 //device.Connection.Filter<RtcmV3Msm4>().Subscribe(i =>
                 //{
