@@ -203,5 +203,28 @@ namespace NtripCore.Caster.Core
             }
                 
         }
+
+        internal void NotifyClientUnsubscribed(Guid id)
+        {
+            // get previously subscribed mountpoint
+            string subscribedMountPoint = _clientSessions[id];
+
+            // remove ID from client sessions
+            _clientSessions.Remove(id);
+
+            // now clean subscribed streams
+            if (_streams.ContainsKey(subscribedMountPoint))
+            {
+                // check if anyone is still subscribed to mountpoint
+                if (!_clientSessions.Any(i => i.Value == subscribedMountPoint))
+                {
+                    // no clients connected, stopping
+                    Console.WriteLine($"No clients connected. Stopping {subscribedMountPoint} subscription.");
+
+                    _streams[subscribedMountPoint].DisconnectAndStop();
+                    _streams.Remove(subscribedMountPoint);
+                }
+            }
+        }
     }
 }

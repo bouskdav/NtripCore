@@ -49,6 +49,8 @@ namespace NtripCore.Caster.Connections.DataPullers
         protected override void OnDisconnected()
         {
             Console.WriteLine($"Chat TCP session with Id {Id} disconnected!");
+
+            _ntripCaster.NotifyClientUnsubscribed(Id);
         }
 
         // BEWARE of differences between ntrip rev 1 and rev2
@@ -89,7 +91,7 @@ namespace NtripCore.Caster.Connections.DataPullers
                         }
                     }
                 }
-                // if message starts with $, dont parse headers
+                // if message starts with $ (NMEA messages), don't parse headers
                 else if (message.StartsWith("$"))
                 {
                     // TODO: NMEA strings go here

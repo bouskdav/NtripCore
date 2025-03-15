@@ -15,6 +15,7 @@ namespace NtripCore.Caster.Configs
             _id = Guid.NewGuid().ToString();
         }
 
+        public SourceType SourceType { get; set; } = SourceType.Default;
         public string Host { get; set; }
         public int? Port { get; set; }
         public List<string> AllowedMountpoints { get; set; }

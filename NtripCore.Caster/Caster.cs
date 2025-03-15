@@ -68,7 +68,9 @@ namespace NtripCore.Caster
                     {
                         // Establish connection to NTRIP server for the requested mount point
                         TcpClient server = new TcpClient(ntripServerAddress, ntripServerPort);
+
                         mountPointConnections[mountPoint] = server;
+
                         Console.WriteLine($"Connection established for mount point: {mountPoint}");
                     }
 
