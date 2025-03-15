@@ -111,8 +111,15 @@ namespace NtripCore.Caster.Core.NtripHttp.Response
                 {
                     if (line.StartsWith("STR"))
                     {
-                        NtripStrRecord strRecord = new NtripStrRecord(line);
-                        streams.Add(strRecord.Mountpoint, strRecord);
+                        try
+                        {
+                            NtripStrRecord strRecord = new NtripStrRecord(line);
+                            streams.Add(strRecord.Mountpoint, strRecord);
+                        }
+                        catch (Exception ex)
+                        {
+
+                        }
                     }
                 }
             }
