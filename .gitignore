@@ -361,3 +361,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/NtripCore.Manager/NtripCore.Manager/LocalDatabase.db
