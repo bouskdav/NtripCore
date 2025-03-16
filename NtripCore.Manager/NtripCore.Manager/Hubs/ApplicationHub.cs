@@ -6,7 +6,7 @@ namespace NtripCore.Manager.Hubs
 {
     public class ApplicationHub : Hub
     {
-        public async Task SendGpsData(string user, string message)
+        public async Task SendMessage(string user, string message)
         {
             await Clients.All.SendAsync("ReceiveGpsData", user, message);
         }
