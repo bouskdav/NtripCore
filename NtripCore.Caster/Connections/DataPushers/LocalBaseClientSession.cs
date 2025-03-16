@@ -73,6 +73,8 @@ namespace NtripCore.Caster.Connections.DataPushers
 
                 device.Connection.GetRtcmV3RawMessages().Subscribe(i =>
                 {
+                    Console.WriteLine(i.MessageId);
+
                     StreamDataReceivedEventArgs args = new StreamDataReceivedEventArgs();
                     args.MountpointName = MountpointName;
                     args.Data = i.RawData;

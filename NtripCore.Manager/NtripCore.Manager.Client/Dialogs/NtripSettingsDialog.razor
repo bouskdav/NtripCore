@@ -1,0 +1,63 @@
+﻿<MudForm Model="@Model" @ref="@form" Validation="@(validator.ValidateValue)" ValidationDelay="0">
+    <MudDialog>
+        <TitleContent>
+            <MudText Typo="Typo.h6">
+                <MudIcon Icon="@Icons.Material.Filled.Satellite" Class="mr-3 mb-n1" />
+                Do you want to connect to a NTRIP service?
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudContainer>
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudSwitch Label="NTRIP service enabled"
+                                   T="bool" 
+                                   UncheckedColor="Color.Default"
+                                   Color="Color.Primary"
+                                   @bind-Value="Model.NtripServiceEnabled"
+                                   For="@(() => Model.NtripServiceEnabled)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Host"
+                                      T="string"
+                                      Disabled="@(!Model.NtripServiceEnabled)"
+                                      @bind-Value="Model.Host"
+                                      For="@(() => Model.Host)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Port"
+                                      T="int?"
+                                      Disabled="@(!Model.NtripServiceEnabled)"
+                                      @bind-Value="Model.Port"
+                                      For="@(() => Model.Port)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Username"
+                                      T="string"
+                                      Disabled="@(!Model.NtripServiceEnabled)"
+                                      @bind-Value="Model.Username"
+                                      For="@(() => Model.Username)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Password"
+                                      T="string"
+                                      Disabled="@(!Model.NtripServiceEnabled)"
+                                      @bind-Value="Model.Password"
+                                      For="@(() => Model.Password)" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField Label="Mountpoint"
+                                      T="string"
+                                      Disabled="@(!Model.NtripServiceEnabled)"
+                                      @bind-Value="Model.Mountpoint"
+                                      For="@(() => Model.Mountpoint)" />
+                    </MudItem>
+                </MudGrid>
+            </MudContainer>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="Cancel">Cancel</MudButton>
+            <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+        </DialogActions>
+    </MudDialog>
+</MudForm>

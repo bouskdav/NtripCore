@@ -1,0 +1,85 @@
+﻿@page "/"
+@using NtripCore.Manager.Shared.Enums
+
+<PageTitle>Home</PageTitle>
+
+<MudContainer Class="px-8" MaxWidth="MaxWidth.False">
+    <MudText Typo="Typo.h3" GutterBottom="true">Welcome to your BaseStation.Net</MudText>
+    <MudText Class="mb-8">You can see the status and make some changes below.</MudText>
+
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard>
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Current operating mode</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton Icon="@Icons.Material.Filled.RestartAlt" Color="Color.Default" />
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudToggleGroup T="OperatingModeType" 
+                                        Class="mud-width-full" 
+                                        SelectedClass="active"
+                                        Value="Model.OperatingMode"
+                                        ValueChanged="OperatingModeChanged">
+                            <MudToggleItem Value="OperatingModeType.None">
+                                <div class="mud-width-full mud-height-full">
+                                    <MudIcon Icon="@Icons.Material.Filled.GpsOff" Style="font-size: 5rem;" Color="@(context ? Color.Error : Color.Default)" />
+                                    <MudText>Off</MudText>
+                                </div>
+                            </MudToggleItem>
+                            <MudToggleItem Value="OperatingModeType.Gps">
+                                <div class="mud-width-full mud-height-full">
+                                    <MudIcon Icon="@Icons.Material.Filled.GpsNotFixed" Style="font-size: 5rem;" Color="@(context ? Color.Success : Color.Default)" />
+                                    <MudText>GPS</MudText>
+                                </div>
+                            </MudToggleItem>
+                            <MudToggleItem Value="OperatingModeType.FixedBase">
+                                <div class="mud-width-full mud-height-full">
+                                    <MudIcon Icon="@Icons.Material.Filled.GpsFixed" Style="font-size: 5rem;" Color="@(context ? Color.Success : Color.Default)" />
+                                    <MudText>Base station</MudText>
+                                </div>
+                            </MudToggleItem>
+                        </MudToggleGroup>
+                </MudCardContent>
+@*                 <MudCardActions>
+                    <MudButton Variant="Variant.Text" Color="Color.Primary">Read More</MudButton>
+                </MudCardActions> *@
+            </MudCard>
+        </MudItem>
+        @if (Model.OperatingMode == OperatingModeType.Gps)
+        {
+
+        }
+        <MudItem xs="12" sm="6" md="4">
+            @* <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;"></MudPaper> *@
+        </MudItem>
+        <MudItem xs="12" sm="12" md="4">
+            @* <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;"></MudPaper> *@
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;"></MudPaper>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;"></MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 100%"></MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;"></MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;"></MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="12" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;"></MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
