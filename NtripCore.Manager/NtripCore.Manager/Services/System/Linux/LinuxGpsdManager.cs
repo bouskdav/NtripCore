@@ -4,6 +4,7 @@ using Ghostware.GPS.NET.Models.Events;
 using NtripCore.Manager.Hubs;
 using NtripCore.Manager.Shared.Interfaces.Services.System;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace NtripCore.Manager.Services.System.Linux
 {
@@ -11,14 +12,19 @@ namespace NtripCore.Manager.Services.System.Linux
     {
         private readonly IConfiguration _configuration;
         private readonly ApplicationHub _applicationHub;
+        private readonly ILogger<LinuxGpsdManager> _logger;
         private readonly GpsService _gpsService;
 
         public event EventHandler<GpsDataEventArgs>? GpsDataReceived;
 
-        public LinuxGpsdManager(IConfiguration configuration, ApplicationHub applicationHub)
+        public LinuxGpsdManager(
+            IConfiguration configuration,
+            ApplicationHub applicationHub,
+            ILogger<LinuxGpsdManager> logger)
         {
             _configuration = configuration;
             _applicationHub = applicationHub;
+            _logger = logger;
 
             int gpsdListenPort = _configuration.GetValue<int>("InternalGps:Gpsd:ListenPort", 2947);
             string gpsdListenAddress = _configuration.GetValue<string>("InternalGps:Gpsd:ListenAddress", "127.0.0.1");
@@ -34,11 +40,15 @@ namespace NtripCore.Manager.Services.System.Linux
 
             _gpsService.RegisterDataEvent(GpsdServiceOnLocationChanged);
             //_gpsService.Connect();
+
+            _logger.LogInformation("Initialized LinuxGpsdManager");
         }
 
         private void GpsdServiceOnLocationChanged(object sender, GpsDataEventArgs args)
         {
             _applicationHub.SendGpsData(args);
+
+            _logger.LogInformation($"Location received: {JsonSerializer.Serialize(args)}");
 
             GpsDataReceived?.Invoke(this, args);
         }
@@ -61,6 +71,8 @@ namespace NtripCore.Manager.Services.System.Linux
 
                 proc.WaitForExit();
             }
+
+            _logger.LogInformation($"Checked GPSD running: {!String.IsNullOrEmpty(result)}");
 
             return Task.FromResult(!String.IsNullOrEmpty(result));
         }
