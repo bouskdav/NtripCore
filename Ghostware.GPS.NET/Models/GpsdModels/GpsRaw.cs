@@ -11,5 +11,6 @@ namespace Ghostware.GPS.NET.Models.GpsdModels
     [DataContract]
     public class GpsRaw : IGpsdMessage
     {
+        public DateTime Time { get; set; }
     }
 }

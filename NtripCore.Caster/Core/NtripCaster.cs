@@ -5,6 +5,7 @@ using NtripCore.Caster.Connections;
 using NtripCore.Caster.Connections.DataPullers;
 using NtripCore.Caster.Connections.DataPushers;
 using NtripCore.Caster.Connections.DataPushers.Abstraction;
+using NtripCore.Caster.Interfaces;
 using NtripCore.Caster.Utility;
 using NtripCore.Caster.Utility.Sources;
 using System;
@@ -27,6 +28,8 @@ namespace NtripCore.Caster.Core
         // one server instance - listener for all clients (subscribers)
         private readonly NtripCasterServer _server;
         private readonly ILogger<NtripCaster> _logger;
+        private readonly INtripCoreInteropServer _interopServer;
+        private readonly IConfiguration _configuration;
 
         // ntrip sources
         private Dictionary<string, NtripSource> _sources = new();
@@ -45,16 +48,28 @@ namespace NtripCore.Caster.Core
         public Dictionary<string, NtripSource> Sources { get => _sources; }
         public List<NtripSource> SourceList { get => _sources.Select(i => i.Value).ToList(); }
 
+        // ticker
+        System.Timers.Timer _timer;
+
         public NtripCaster(
             NtripCasterServer server,
-            ILogger<NtripCaster> logger)
+            ILogger<NtripCaster> logger,
+            INtripCoreInteropServer interopServer,
+            IConfiguration configuration)
         {
             _server = server;
             _logger = logger;
+            _interopServer = interopServer;
+            _configuration = configuration;
 
             _id = Guid.NewGuid().ToString();
 
             _server.RegisterCaster(this);
+
+            _timer = new System.Timers.Timer(5000);
+            _timer.Elapsed += _timer_Elapsed;
+            _timer.AutoReset = true;
+            _timer.Enabled = true;
         }
 
         public Task StartServer()
@@ -65,12 +80,16 @@ namespace NtripCore.Caster.Core
 
             _logger.LogInformation($"Started successfully.");
 
+            _timer.Start();
+
             return Task.CompletedTask;
         }
 
         public Task StopServer()
         {
             _server.Stop();
+
+            _timer.Stop();
 
             return Task.CompletedTask;
         }
@@ -89,14 +108,14 @@ namespace NtripCore.Caster.Core
         /// <param name="mountpoint"></param>
         public void SubscribeClientToMountpoint(NtripCasterSubscriberSession session, string mountpoint)
         {
-            // TODO: subscription is done here, so all "nearest mountpoint" etc. logic should go here
-            string nearestMountpointName = Program._configuration.GetValue<string>("NearestMountpoint:MountpointName");
+            // subscription is done here, so all "nearest mountpoint" etc. logic should go here
+            string nearestMountpointName = _configuration.GetValue<string>("NearestMountpoint:MountpointName");
 
             if (mountpoint == nearestMountpointName)
             {
                 // if newly subscribed to nearest mountpoint, set nearest mode true for that source
                 // wait for NMEA GGA message and resubscribe then
-                session.SetNearestMode();
+                session.SetNearestMode(60);
 
                 return;
             }
@@ -250,6 +269,12 @@ namespace NtripCore.Caster.Core
                     _streams.Remove(subscribedMountPoint);
                 }
             }
+        }
+
+        private void _timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+
+            //_interopServer.
         }
     }
 }

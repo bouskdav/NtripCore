@@ -1,5 +1,7 @@
 ﻿using Ghostware.GPS.NET.Models.GpsdModels.Abstraction.Contracts;
+using System;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Ghostware.GPS.NET.Models.GpsdModels
 {
@@ -17,6 +19,9 @@ namespace Ghostware.GPS.NET.Models.GpsdModels
 
         [DataMember(Name = "proto_minor")]
         public int ProtoMinor { get; set; }
+
+        [JsonIgnore]
+        public DateTime Time { get; set; }
 
         public override string ToString()
         {

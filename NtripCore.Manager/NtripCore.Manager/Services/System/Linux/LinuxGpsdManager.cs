@@ -15,6 +15,8 @@ namespace NtripCore.Manager.Services.System.Linux
         private readonly ILogger<LinuxGpsdManager> _logger;
         private readonly GpsService _gpsService;
 
+        private bool _connected;
+
         public event EventHandler<GpsDataEventArgs>? GpsDataReceived;
 
         public LinuxGpsdManager(
@@ -72,6 +74,12 @@ namespace NtripCore.Manager.Services.System.Linux
                 proc.WaitForExit();
             }
 
+            if (!String.IsNullOrEmpty(result) && !_connected)
+            {
+                _gpsService.Connect();
+                _connected = true;
+            }
+
             _logger.LogInformation($"Checked GPSD running: {!String.IsNullOrEmpty(result)}");
 
             return Task.FromResult(!String.IsNullOrEmpty(result));
@@ -104,6 +112,7 @@ namespace NtripCore.Manager.Services.System.Linux
             }
 
             _gpsService.Connect();
+            _connected = true;
 
             return Task.CompletedTask;
         }
@@ -128,6 +137,7 @@ namespace NtripCore.Manager.Services.System.Linux
             }
 
             _gpsService.Disconnect();
+            _connected = false;
 
             return Task.CompletedTask;
         }

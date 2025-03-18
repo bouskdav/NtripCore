@@ -22,7 +22,7 @@ namespace NtripCore.Caster.Connections
 
         protected override TcpSession CreateSession() 
         {
-            return new NtripCasterSubscriberSession(this, _ntripCaster); 
+            return new NtripCasterSubscriberSession(this, _ntripCaster);
         }
 
         protected override void OnError(System.Net.Sockets.SocketError error)

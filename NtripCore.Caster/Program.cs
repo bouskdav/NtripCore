@@ -19,6 +19,11 @@ using NtripCore.Caster.Core.NMEA;
 using NtripCore.Caster.Utility.Sources;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Runtime.InteropServices;
+using NtripCore.Shared.Constants;
+using NtripCore.Caster.Connections.Interop;
+using NtripCore.Caster.Interfaces;
+using System;
 
 namespace NtripCore.Caster
 {
@@ -231,9 +236,12 @@ namespace NtripCore.Caster
 
                     _hostingEnvironment = env;
 
+                    string environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? env.EnvironmentName;
+
                     configuration
                         .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                        .AddJsonFile($"appsettings.{env.EnvironmentName}.json", true, true);
+                        .AddJsonFile($"appsettings.{environmentName}.json", optional: false, reloadOnChange: true)
+                        .AddJsonFile(ApplicationConstants.ManagerRuntimeConfigName, optional: true, reloadOnChange: true);
 
                     IConfigurationRoot configurationRoot = configuration.Build();
                 })
@@ -241,6 +249,19 @@ namespace NtripCore.Caster
                 {
                     IPAddress serverAddress = IPAddress.Any;
                     int port = context.Configuration.GetValue<int>("ServerPort");
+
+                    // if on linux, run management socket
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                    {
+                        string socketName = context.Configuration.GetValue<string>("SocketName", "ntripcore.caster.sock");
+                        string socketPath = Path.Combine(context.Configuration.GetValue<string>("SocketPath", Path.GetTempPath()));
+
+                        services.AddSingleton<INtripCoreInteropServer, NtripCoreUdsInteropServer>(services => new NtripCoreUdsInteropServer(socketPath));
+                    }
+                    else
+                    {
+                        services.AddSingleton<INtripCoreInteropServer, NtripCoreTcpInteropServer>(services => new NtripCoreTcpInteropServer(IPAddress.Any, 2100));
+                    }
 
                     services.AddSingleton<NtripCasterServer>(services => new NtripCasterServer(serverAddress, port));
 

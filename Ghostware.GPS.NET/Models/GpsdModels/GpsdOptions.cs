@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 namespace Ghostware.GPS.NET.Models.GpsdModels
 {
     [DataContract]
-    public class GpsdOptions : IGpsdMessage
+    public class GpsdOptions
     {
         [DataMember(Name = "enable")]
         public bool Enable { get; set; }

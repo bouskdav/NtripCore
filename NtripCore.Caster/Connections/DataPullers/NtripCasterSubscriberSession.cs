@@ -26,9 +26,16 @@ namespace NtripCore.Caster.Connections.DataPullers
         private bool _nearestMode = false;
         private double? _latitude;
         private double? _longitude;
+        private DateTime? _lastUpdateTime;
+        private int? _updateFrequency;
 
         public double? Latitude { get => _latitude; set => _latitude = value; }
         public double? Longitude { get => _longitude; set => _longitude = value; }
+        public DateTime NextUpdateTime => _lastUpdateTime.HasValue && _updateFrequency.HasValue ?
+            _lastUpdateTime.Value.AddSeconds(_updateFrequency.Value) :
+            DateTime.Now;
+
+        public DateTime UpdateTime { set => _lastUpdateTime = value; }
 
         public NtripCasterSubscriberSession(NtripCasterServer server, NtripCaster ntripCaster) 
             : base(server)
@@ -102,10 +109,16 @@ namespace NtripCore.Caster.Connections.DataPullers
                         _latitude = gpggaMessage.Latitude;
                         _longitude = gpggaMessage.Longitude;
 
+                        DateTime now = DateTime.Now;
+
                         // TODO: update position an resubscribe to nearest
                         if (_nearestMode)
                         {
-                            _ntripCaster.ResubscribeClientToNearestMountpoint(this).GetAwaiter().GetResult();
+                            if (now <= NextUpdateTime)
+                            {
+                                UpdateTime = now;
+                                _ntripCaster.ResubscribeClientToNearestMountpoint(this).GetAwaiter().GetResult();
+                            }
                         }
                     }
                 }
@@ -330,6 +343,10 @@ namespace NtripCore.Caster.Connections.DataPullers
             return builder.ToString();
         }
 
-        public void SetNearestMode() => _nearestMode = true;
+        public void SetNearestMode(int updateLimitSeconds)
+        {
+            _nearestMode = true;
+            _updateFrequency = updateLimitSeconds;
+        }
     }
 }

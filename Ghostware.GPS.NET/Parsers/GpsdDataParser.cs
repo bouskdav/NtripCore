@@ -6,11 +6,16 @@ namespace Ghostware.GPS.NET.Parsers
 {
     public class GpsdDataParser
     {
-        public IGpsdMessage GetGpsData(string gpsData)
+        public IGpsdMessage GetGpsData(string gpsData, out string cls)
         {
+            cls = null;
+
             try
             {
                 var classType = JsonConvert.DeserializeObject<DataClassType>(gpsData);
+
+                cls = classType.Class;
+
                 return (IGpsdMessage)JsonConvert.DeserializeObject(gpsData, classType.GetClassType());
             }
             catch (JsonReaderException)

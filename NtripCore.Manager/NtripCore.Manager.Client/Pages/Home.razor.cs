@@ -57,11 +57,6 @@ namespace NtripCore.Manager.Client.Pages
 
                 Console.WriteLine(JsonSerializer.Serialize(systemState));
 
-                if (hubConnection is not null)
-                {
-                    await hubConnection.SendAsync("SendGpsData", "test", Guid.NewGuid().ToString());
-                }
-
                 await InvokeAsync(() =>
                 {
                     // service states - update always

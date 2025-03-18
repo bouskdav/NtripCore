@@ -8,5 +8,6 @@ namespace Ghostware.GPS.NET.Models.GpsdModels.Abstraction.Contracts
 {
     public interface IGpsdMessage
     {
+        public DateTime Time { get; set; }
     }
 }

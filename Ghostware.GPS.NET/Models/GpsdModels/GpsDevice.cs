@@ -5,7 +5,7 @@ using System.Runtime.Serialization;
 namespace Ghostware.GPS.NET.Models.GpsdModels
 {
     [DataContract]
-    public class GpsDevice : IGpsdMessage
+    public class GpsDevice
     {
         [DataMember(Name = "path")]
         public string Path { get; set; }
